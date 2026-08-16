@@ -7,6 +7,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { queryClient } from "@/lib/queryClient";
 import AccountCallback from "@/pages/AccountCallback";
 import Accounts from "@/pages/Accounts";
+import AIStudio from "@/pages/AIStudio";
+import Calendar from "@/pages/Calendar";
 import CreatePost from "@/pages/CreatePost";
 import Dashboard from "@/pages/Dashboard";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -15,6 +17,7 @@ import Posts from "@/pages/Posts";
 import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import Settings from "@/pages/Settings";
+import YouTubeStudio from "@/pages/YouTubeStudio";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 
 export default function App() {
@@ -35,6 +38,9 @@ export default function App() {
                 <Route path="/posts" element={<Posts />} />
                 <Route path="/posts/new" element={<CreatePost />} />
                 <Route path="/posts/:id" element={<CreatePost />} />
+                <Route path="/youtube-studio" element={<YouTubeStudio />} />
+                <Route path="/ai-studio" element={<AIStudio />} />
+                <Route path="/calendar" element={<Calendar />} />
                 <Route path="/accounts" element={<Accounts />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>

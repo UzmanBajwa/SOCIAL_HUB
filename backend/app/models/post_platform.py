@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -29,6 +30,10 @@ class PostPlatform(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     retry_count: Mapped[int] = mapped_column(default=0, nullable=False)
+
+    # Platform-specific metadata, e.g. for YouTube: {"video_id": "...", "upload_status": "processed"}.
+    # Kept as a JSON bag so new platforms/fields don't need a migration.
+    meta: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     post: Mapped["Post"] = relationship(back_populates="platforms")
     social_account: Mapped["SocialAccount"] = relationship()

@@ -12,7 +12,7 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            "pointer-events-auto flex items-start justify-between gap-3 rounded-lg border border-border bg-card p-4 shadow-lg animate-in slide-in-from-bottom-2",
+            "glass-panel-strong pointer-events-auto flex items-start justify-between gap-3 rounded-xl border border-border p-4 shadow-soft-lg animate-in slide-in-from-bottom-2",
             t.variant === "destructive" && "border-destructive/30 bg-destructive/5",
             t.variant === "success" && "border-success/30 bg-success/5"
           )}

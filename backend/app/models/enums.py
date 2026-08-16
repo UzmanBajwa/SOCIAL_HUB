@@ -27,6 +27,9 @@ class PostStatus(str, enum.Enum):
 class PostPlatformStatus(str, enum.Enum):
     pending = "pending"
     publishing = "publishing"
+    # YouTube videos keep processing server-side after the upload finishes -- this state
+    # lets a PostPlatform row reflect "uploaded, not yet live" without blocking the rest.
+    processing = "processing"
     published = "published"
     failed = "failed"
 
@@ -34,3 +37,18 @@ class PostPlatformStatus(str, enum.Enum):
 class MediaType(str, enum.Enum):
     image = "image"
     video = "video"
+
+
+class YouTubeUploadStatus(str, enum.Enum):
+    """Lifecycle of a single YouTube Studio resumable upload session (youtube_uploads):
+
+    initialized -> uploading -> uploaded -> (server-side processing, later task) -> completed
+    Any of these can end in failed or cancelled.
+    """
+    initialized = "initialized"
+    uploading = "uploading"
+    uploaded = "uploaded"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"

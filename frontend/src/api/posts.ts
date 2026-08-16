@@ -1,12 +1,19 @@
 import { api } from "@/lib/api";
-import type { Post } from "@/types";
+import type { Mention, MediaItem, Post, PostLocation } from "@/types";
 
 export interface CreatePostPayload {
   content: string;
   media_url?: string | null;
   media_type?: string | null;
+  media_items?: MediaItem[] | null;
   thumbnail_url?: string | null;
   share_to_feed?: boolean;
+  is_pinned?: boolean;
+  publish_as_reel?: boolean;
+  mentions?: Mention[] | null;
+  location?: PostLocation | null;
+  timezone?: string | null;
+  platform_options?: Record<string, unknown> | null;
   platform_account_ids: string[];
   publish_date?: string | null;
 }

@@ -47,7 +47,9 @@ async def fetch_pages(client: httpx.AsyncClient, graph_base_url: str, long_lived
         f"{graph_base_url}/me/accounts",
         params={
             "access_token": long_lived_user_token,
-            "fields": "id,name,access_token,category,picture,tasks",
+            # whatsapp_number is present only when the Page has WhatsApp connected -- used
+            # to show connection status in the composer without ever showing a fake button.
+            "fields": "id,name,access_token,category,picture,tasks,whatsapp_number",
         },
     )
     resp.raise_for_status()

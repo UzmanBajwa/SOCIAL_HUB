@@ -67,6 +67,13 @@ class PublishContent:
     # Instagram Reels-only options; other platforms ignore these.
     thumbnail_url: str | None = None
     share_to_feed: bool = True
+    # Ordered list of {"url", "type"} -- when len > 1, Facebook publishes a carousel.
+    media_items: list[dict] = field(default_factory=list)
+    # Facebook-only options; other platforms ignore these.
+    is_pinned: bool = False
+    publish_as_reel: bool = False
+    mentions: list[dict] = field(default_factory=list)  # [{"id", "name"}]
+    location: dict | None = None  # {"id", "name"}
 
 
 @dataclass
@@ -86,6 +93,13 @@ class PlatformService(ABC):
     """
 
     platform_name: str
+
+    # Most providers (Instagram, LinkedIn) refresh their OAuth access token by passing
+    # the current access token back to the token endpoint. Google/YouTube instead require
+    # the OAuth refresh_token. This flag lets the generic refresh helpers in
+    # account_service / post_service pick the right credential without hardcoding
+    # platform names. Defaults to False to preserve existing Instagram behavior.
+    refresh_uses_refresh_token: bool = False
 
     @abstractmethod
     def get_authorize_url(self, state: str) -> str:

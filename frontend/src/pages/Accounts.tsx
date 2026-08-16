@@ -7,6 +7,7 @@ import { PlatformIcon } from "@/components/PlatformIcon";
 import { AccountCard } from "@/components/accounts/AccountCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/api";
 import { PLATFORM_LABELS, SUPPORTED_PLATFORMS, type Platform } from "@/types";
@@ -66,7 +67,7 @@ export default function Accounts() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold">Accounts</h1>
-        <p className="text-sm text-muted-foreground">Connect the Facebook Pages and Instagram Business accounts you publish to.</p>
+        <p className="text-sm text-muted-foreground">Connect the Facebook Pages, Instagram Business accounts, and LinkedIn Company Pages you publish to.</p>
       </div>
 
       {SUPPORTED_PLATFORMS.map((platform) => {
@@ -74,7 +75,7 @@ export default function Accounts() {
         const isConnectingThis = connectMutation.isPending && connectingPlatform === platform;
 
         return (
-          <Card key={platform}>
+          <Card key={platform} className="shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div className="flex items-center gap-3">
                 <PlatformIcon platform={platform} />
@@ -93,7 +94,10 @@ export default function Accounts() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading...</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Skeleton className="h-32" />
+                  <Skeleton className="h-32" />
+                </div>
               ) : platformAccounts.length ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {platformAccounts.map((account) => (

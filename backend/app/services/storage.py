@@ -5,6 +5,7 @@ import uuid
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from pathlib import Path
+from typing import AsyncIterator
 
 import aiofiles
 import boto3
@@ -31,6 +32,25 @@ class StorageBackend(ABC):
     async def delete(self, file_url: str) -> None:
         """Best-effort removal of a previously stored file."""
 
+    @abstractmethod
+    async def open(self, file_url: str, start: int = 0) -> AsyncIterator[bytes]:
+        """Yield a stored file's bytes in streaming chunks starting at byte `start`.
+
+        Never loads the whole file into memory -- used by the YouTube uploader to stream
+        a video to Google without buffering it."""
+
+    @abstractmethod
+    async def get_size(self, file_url: str) -> int:
+        """Return the stored file's size in bytes. Raises FileNotFoundError if absent."""
+
+    async def read(self, file_url: str) -> bytes:
+        """Read an entire stored file into memory. Only sensible for small files (e.g.
+        YouTube thumbnails); videos must stay on the streaming `open` path."""
+        chunks = []
+        async for chunk in self.open(file_url):
+            chunks.append(chunk)
+        return b"".join(chunks)
+
 
 class LocalStorage(StorageBackend):
     def __init__(self, upload_dir: str, public_base_url: str) -> None:
@@ -50,6 +70,21 @@ class LocalStorage(StorageBackend):
         target = self.upload_dir / file_name
         if target.exists():
             target.unlink()
+
+    async def open(self, file_url: str, start: int = 0) -> AsyncIterator[bytes]:
+        file_name = file_url.rsplit("/", 1)[-1]
+        target = self.upload_dir / file_name
+        if not target.exists():
+            raise FileNotFoundError(f"Stored file not found: {file_name}")
+        async with aiofiles.open(target, "rb") as in_file:
+            if start:
+                await in_file.seek(start)
+            while chunk := await in_file.read(1024 * 1024):
+                yield chunk
+
+    async def get_size(self, file_url: str) -> int:
+        file_name = file_url.rsplit("/", 1)[-1]
+        return (self.upload_dir / file_name).stat().st_size
 
 
 class R2Storage(StorageBackend):
@@ -90,6 +125,27 @@ class R2Storage(StorageBackend):
     async def delete(self, file_url: str) -> None:
         key = file_url.rsplit("/", 1)[-1]
         await asyncio.to_thread(self.client.delete_object, Bucket=self.bucket_name, Key=key)
+
+    def _get_body(self, key: str, start: int):
+        return self.client.get_object(
+            Bucket=self.bucket_name, Key=key, Range=f"bytes={start}-"
+        )["Body"]
+
+    async def open(self, file_url: str, start: int = 0) -> AsyncIterator[bytes]:
+        key = file_url.rsplit("/", 1)[-1]
+        body = await asyncio.to_thread(self._get_body, key, start)
+        while True:
+            chunk = await asyncio.to_thread(body.read, 8 * 1024 * 1024)
+            if not chunk:
+                break
+            yield chunk
+
+    async def get_size(self, file_url: str) -> int:
+        key = file_url.rsplit("/", 1)[-1]
+        head = await asyncio.to_thread(
+            self.client.head_object, Bucket=self.bucket_name, Key=key
+        )
+        return head["ContentLength"]
 
 
 @lru_cache

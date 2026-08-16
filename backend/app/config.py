@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # Which platforms users are allowed to connect in this deployment. Services and models
     # for disabled platforms stay fully intact -- this is purely a product on/off switch
     # enforced at the API layer (see app/api/accounts.py).
-    enabled_platforms: str = "facebook,instagram"
+    enabled_platforms: str = "facebook,instagram,linkedin,youtube"
 
     # Storage
     storage_backend: str = "local"
@@ -56,13 +56,25 @@ class Settings(BaseSettings):
     instagram_app_secret: str = ""
     instagram_graph_version: str = "v21.0"
 
-    # LinkedIn (kept intact for a future release; not in enabled_platforms by default)
+    # LinkedIn -- Company Page posting via the modern /rest/posts API (not the deprecated
+    # ugcPosts API). LinkedIn-Version must be a YYYYMM value LinkedIn currently supports
+    # (roughly a rolling 12-month window) -- bump this if calls start failing with a
+    # version error, similar to Meta's graph_version fields above.
     linkedin_client_id: str = ""
     linkedin_client_secret: str = ""
+    linkedin_api_version: str = "202604"
 
     # YouTube (kept intact for a future release; not in enabled_platforms by default)
     youtube_client_id: str = ""
     youtube_client_secret: str = ""
+
+    # YouTube Studio uploader (Task 2). Video bytes stream to Google in chunks of
+    # youtube_upload_chunk_size and the whole file is never buffered in RAM; both knobs
+    # are env-overridable (YOUTUBE_MAX_VIDEO_MB / YOUTUBE_UPLOAD_CHUNK_SIZE). The generic
+    # /media/upload endpoint keeps its own 200MB cap -- large YouTube videos go through
+    # the dedicated raw-body /api/youtube/upload/{id}/data path instead.
+    youtube_max_video_mb: int = 4096  # 4GB, YouTube's default account limit
+    youtube_upload_chunk_size: int = 10 * 1024 * 1024  # 10MB
 
     # Scheduler
     scheduler_poll_seconds: int = 60

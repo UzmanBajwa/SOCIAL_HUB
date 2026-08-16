@@ -19,7 +19,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const navigate = useNavigate();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 md:px-6">
+    <header className="glass-panel relative z-10 flex h-16 items-center justify-between border-b border-border px-4 md:px-6">
       <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
         <Menu className="h-5 w-5" />
       </Button>
@@ -34,9 +34,11 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <Avatar>
-                <AvatarFallback>{user ? initials(user.name) : <UserIcon className="h-4 w-4" />}</AvatarFallback>
+            <button className="rounded-full ring-2 ring-transparent transition-shadow hover:ring-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Avatar className="ring-1 ring-border">
+                <AvatarFallback className="bg-gradient-brand text-white">
+                  {user ? initials(user.name) : <UserIcon className="h-4 w-4" />}
+                </AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>

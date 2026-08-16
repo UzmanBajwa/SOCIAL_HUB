@@ -7,7 +7,9 @@ const STORAGE_KEY = "socialhub_theme";
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  // SocialHub's visual identity is a dark command-center -- default new visitors
+  // into it rather than following the OS light/dark preference.
+  return "dark";
 }
 
 export function useTheme() {

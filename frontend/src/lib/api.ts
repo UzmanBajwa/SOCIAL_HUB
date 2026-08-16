@@ -2,6 +2,8 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+export { API_BASE_URL };
+
 const ACCESS_TOKEN_KEY = "socialhub_access_token";
 const REFRESH_TOKEN_KEY = "socialhub_refresh_token";
 

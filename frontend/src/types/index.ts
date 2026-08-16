@@ -10,7 +10,7 @@ export type PostStatus =
   | "partially_published"
   | "failed";
 
-export type PostPlatformStatus = "pending" | "publishing" | "published" | "failed";
+export type PostPlatformStatus = "pending" | "publishing" | "processing" | "published" | "failed";
 
 export interface User {
   id: string;
@@ -68,6 +68,22 @@ export interface PostPlatformRecord {
   published_at: string | null;
   error_message: string | null;
   retry_count: number;
+  meta: Record<string, unknown> | null;
+}
+
+export interface MediaItem {
+  url: string;
+  type: "image" | "video";
+}
+
+export interface Mention {
+  id: string;
+  name: string;
+}
+
+export interface PostLocation {
+  id: string;
+  name: string;
 }
 
 export interface Post {
@@ -76,8 +92,15 @@ export interface Post {
   content: string;
   media_url: string | null;
   media_type: "image" | "video" | null;
+  media_items: MediaItem[] | null;
   thumbnail_url: string | null;
   share_to_feed: boolean;
+  is_pinned: boolean;
+  publish_as_reel: boolean;
+  mentions: Mention[] | null;
+  location: PostLocation | null;
+  timezone: string | null;
+  platform_options: Record<string, unknown> | null;
   status: PostStatus;
   publish_date: string | null;
   created_at: string;
@@ -101,6 +124,82 @@ export interface Media {
   created_at: string;
 }
 
+export type YouTubeUploadStatus =
+  | "initialized"
+  | "uploading"
+  | "uploaded"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export type YouTubePrivacy = "public" | "private" | "unlisted";
+
+export interface YouTubeUploadInitRequest {
+  account_id: string;
+  total_size: number;
+  title: string;
+  description?: string | null;
+  privacy_status: YouTubePrivacy;
+  tags?: string[];
+  category?: string | null;
+  made_for_kids?: boolean;
+  thumbnail_url?: string | null;
+}
+
+export interface YouTubeUploadInitResponse {
+  upload_id: string;
+  status: YouTubeUploadStatus;
+  progress: number;
+  title: string;
+  total_size: number;
+  video_id: string | null;
+  error: string | null;
+  post_id: string | null;
+}
+
+export interface YouTubeUploadProgressResponse {
+  upload_id: string;
+  status: YouTubeUploadStatus;
+  progress: number;
+  video_id: string | null;
+  error: string | null;
+  post_id: string | null;
+}
+
+export interface YouTubePublishRequest {
+  publish_date?: string | null;
+  timezone?: string | null;
+  playlist_ids?: string[];
+}
+
+export interface YouTubePlaylist {
+  playlist_id: string;
+  title: string;
+  description: string | null;
+  privacy_status: string | null;
+  item_count: number | null;
+  thumbnail_url: string | null;
+}
+
+export interface YouTubePlaylistCreate {
+  account_id: string;
+  title: string;
+  description?: string | null;
+  privacy_status: YouTubePrivacy;
+}
+
+export interface YouTubePlaylistItemResult {
+  playlist_id: string;
+  success: boolean;
+  error: string | null;
+}
+
+export interface YouTubePublishResponse {
+  post: Post;
+  playlist_results: YouTubePlaylistItemResult[];
+}
+
 export const PLATFORM_LABELS: Record<Platform, string> = {
   facebook: "Facebook",
   instagram: "Instagram",
@@ -108,7 +207,7 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   youtube: "YouTube",
 };
 
-// This MVP only supports connecting Facebook and Instagram. LinkedIn/YouTube services,
-// types, and routes are kept intact on the backend for a future release -- re-enabling
-// them here (and in backend ENABLED_PLATFORMS) is a one-line change, not a rewrite.
-export const SUPPORTED_PLATFORMS: Platform[] = ["facebook", "instagram"];
+// YouTube's service/types/routes are kept intact on the backend; enable it in the UI here
+// and in backend ENABLED_PLATFORMS. YouTube uses its own Studio-style uploader (separate
+// from the social Composer), but the connected account still appears on the Accounts page.
+export const SUPPORTED_PLATFORMS: Platform[] = ["facebook", "instagram", "linkedin", "youtube"];

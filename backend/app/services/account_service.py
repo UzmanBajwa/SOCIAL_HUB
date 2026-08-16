@@ -22,6 +22,12 @@ logger = logging.getLogger("socialhub.accounts")
 # out gives ample retry room if a refresh attempt fails transiently.
 TOKEN_REFRESH_WINDOW = timedelta(days=10)
 
+# How close to expiry a token can be before a caller (publish/upload) refreshes it first.
+# YouTube's Google tokens last ~1 hour, so this window is reached between hourly
+# background-refresh runs -- the guarantee is "never attempt an API call with a token
+# within 5 minutes of expiring."
+PUBLISH_TOKEN_REFRESH_BUFFER = timedelta(minutes=5)
+
 # In-memory OAuth state store (state -> (user_id, created_at)) to guard against CSRF on
 # the OAuth callback, and in-memory pending page selections between "fetch candidate
 # Pages" and "user picks one". Both are single-process, TTL'd, single-use stores -- a
@@ -54,6 +60,58 @@ class PlatformNotSupportedError(Exception):
 
 class InvalidSelectionError(Exception):
     pass
+
+
+class AccountTokenError(Exception):
+    """The account's token is missing/expired and could not be refreshed in time."""
+
+
+async def ensure_valid_access_token(
+    db: AsyncSession, account: SocialAccount, *, strict: bool = False
+) -> str:
+    """Return a plaintext access token for `account`, refreshing and persisting it first
+    if it is expired or within PUBLISH_TOKEN_REFRESH_BUFFER of expiry. Refreshing uses
+    the OAuth refresh_token for Google services (refresh_uses_refresh_token=True) and the
+    access token for every other provider, mirroring refresh_expiring_tokens().
+
+    strict=True (upload flow): a failed refresh raises AccountTokenError -- an upload
+    must never start (or continue) on a credential that's about to die mid-transfer.
+    strict=False (publish flow): a failed refresh is logged and the stored token is used
+    anyway, matching the old best-effort behavior where the publish surfaces the provider
+    error."""
+    encryptor = get_encryptor()
+    service = get_platform_service(account.platform)
+    refresh_fn = getattr(service, "refresh_access_token", None)
+
+    needs_refresh = (
+        refresh_fn is not None
+        and account.refresh_token is not None
+        and account.expires_at is not None
+        and account.expires_at <= datetime.now(timezone.utc) + PUBLISH_TOKEN_REFRESH_BUFFER
+    )
+    if needs_refresh:
+        refresh_credential = (
+            encryptor.decrypt(account.refresh_token)
+            if getattr(service, "refresh_uses_refresh_token", False)
+            else encryptor.decrypt(account.access_token)
+        )
+        try:
+            new_token, new_expires_at = await refresh_fn(refresh_credential)
+            account.access_token = encryptor.encrypt(new_token)
+            account.expires_at = new_expires_at
+            await db.commit()
+            return new_token
+        except Exception as exc:  # noqa: BLE001 - the provider call failed
+            logger.exception(
+                "Failed to refresh token for %s account %s", account.platform, account.id
+            )
+            if strict:
+                raise AccountTokenError(
+                    "Your connected account's token is expired and could not be refreshed. "
+                    "Please reconnect the account and try again."
+                ) from exc
+
+    return encryptor.decrypt(account.access_token)
 
 
 def _purge_expired(store: dict, ttl: timedelta, get_created_at) -> None:
@@ -267,8 +325,15 @@ async def refresh_expiring_tokens(db: AsyncSession) -> None:
         if refresh_fn is None:
             continue
         try:
-            old_token = encryptor.decrypt(account.access_token)
-            new_token, new_expires_at = await refresh_fn(old_token)
+            # Most providers refresh with the access token itself; Google/YouTube refresh
+            # with the OAuth refresh_token (see PlatformService.refresh_uses_refresh_token).
+            if getattr(service, "refresh_uses_refresh_token", False):
+                if not account.refresh_token:
+                    continue
+                refresh_credential = encryptor.decrypt(account.refresh_token)
+            else:
+                refresh_credential = encryptor.decrypt(account.access_token)
+            new_token, new_expires_at = await refresh_fn(refresh_credential)
             account.access_token = encryptor.encrypt(new_token)
             account.expires_at = new_expires_at
         except Exception:  # noqa: BLE001 - one account's refresh failure must not stop others

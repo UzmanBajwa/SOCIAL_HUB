@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { fetchPosts } from "@/api/posts";
 import { PostCard } from "@/components/posts/PostCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { PostStatus } from "@/types";
 
@@ -53,7 +54,11 @@ export default function Posts() {
       </Tabs>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading posts...</p>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[76px]" />
+          ))}
+        </div>
       ) : filteredPosts.length ? (
         <div className="space-y-3">
           {filteredPosts.map((post) => (
