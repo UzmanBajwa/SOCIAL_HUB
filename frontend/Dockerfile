@@ -16,10 +16,7 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-
-RUN sed -i 's/listen       80;/listen       10000;/' /etc/nginx/conf.d/default.conf \
-    && sed -i 's/listen  \[::\]:80;/listen  [::]:10000;/' /etc/nginx/conf.d/default.conf \
-    && sed -i '/location \/ {/a \        try_files $uri $uri\/ \/index.html;' /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 10000
 
