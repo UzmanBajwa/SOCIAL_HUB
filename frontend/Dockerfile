@@ -13,16 +13,14 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 
-FROM node:22-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+COPY --from=build /app/dist /usr/share/nginx/html
 
-RUN npm install -g serve
-
-COPY --from=build /app/dist ./dist
-
-ENV PORT=10000
+RUN sed -i 's/listen       80;/listen       10000;/' /etc/nginx/conf.d/default.conf \
+    && sed -i 's/listen  \[::\]:80;/listen  [::]:10000;/' /etc/nginx/conf.d/default.conf \
+    && sed -i '/location \/ {/a \        try_files $uri $uri\/ \/index.html;' /etc/nginx/conf.d/default.conf
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "serve -s dist -l ${PORT}"]
+CMD ["nginx", "-g", "daemon off;"]
