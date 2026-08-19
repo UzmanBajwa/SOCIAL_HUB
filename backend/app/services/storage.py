@@ -43,6 +43,12 @@ class StorageBackend(ABC):
     async def get_size(self, file_url: str) -> int:
         """Return the stored file's size in bytes. Raises FileNotFoundError if absent."""
 
+    @abstractmethod
+    async def save_bytes(
+        self, data: bytes, destination_name: str, content_type: str
+    ) -> str:
+        """Persist raw bytes and return a publicly reachable URL."""
+
     async def read(self, file_url: str) -> bytes:
         """Read an entire stored file into memory. Only sensible for small files (e.g.
         YouTube thumbnails); videos must stay on the streaming `open` path."""
@@ -63,6 +69,14 @@ class LocalStorage(StorageBackend):
         async with aiofiles.open(destination, "wb") as out_file:
             while chunk := await file.read(1024 * 1024):
                 await out_file.write(chunk)
+        return f"{self.public_base_url}/uploads/{destination_name}"
+
+    async def save_bytes(
+        self, data: bytes, destination_name: str, content_type: str
+    ) -> str:
+        destination = self.upload_dir / destination_name
+        async with aiofiles.open(destination, "wb") as out_file:
+            await out_file.write(data)
         return f"{self.public_base_url}/uploads/{destination_name}"
 
     async def delete(self, file_url: str) -> None:
@@ -125,6 +139,18 @@ class R2Storage(StorageBackend):
     async def delete(self, file_url: str) -> None:
         key = file_url.rsplit("/", 1)[-1]
         await asyncio.to_thread(self.client.delete_object, Bucket=self.bucket_name, Key=key)
+
+    async def save_bytes(
+        self, data: bytes, destination_name: str, content_type: str
+    ) -> str:
+        await asyncio.to_thread(
+            self.client.put_object,
+            Bucket=self.bucket_name,
+            Key=destination_name,
+            Body=data,
+            ContentType=content_type,
+        )
+        return f"{self.public_url}/{destination_name}"
 
     def _get_body(self, key: str, start: int):
         return self.client.get_object(

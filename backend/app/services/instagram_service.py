@@ -9,6 +9,7 @@ import httpx
 
 from app.config import get_settings
 from app.services.base import OAuthTokenSet, PageCandidate, PlatformService, PublishContent, PublishResult
+from app.services.instagram_media import InstagramImageProcessingError, prepare_instagram_image
 
 # Instagram API with Instagram Login: the user authorizes directly with their Instagram
 # account -- no Facebook Page required. This uses its own Meta app (separate App ID/
@@ -168,7 +169,11 @@ class InstagramService(PlatformService):
                     if content.thumbnail_url:
                         container_payload["cover_url"] = content.thumbnail_url
                 else:
-                    container_payload["image_url"] = content.media_url
+                    try:
+                        ig_media_url = await prepare_instagram_image(content.media_url)
+                    except InstagramImageProcessingError as exc:
+                        return PublishResult(success=False, error_message=str(exc))
+                    container_payload["image_url"] = ig_media_url
 
                 create_resp = await client.post(
                     f"{self.graph_base_url}/{account_id}/media", data=container_payload

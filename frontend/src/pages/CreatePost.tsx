@@ -279,7 +279,7 @@ export default function CreatePost() {
                 </p>
               </div>
 
-              <MediaUploader items={mediaItems} onChange={setMediaItems} disabled={isReadOnly} />
+              <MediaUploader items={mediaItems} onChange={setMediaItems} disabled={isReadOnly} hasInstagramSelected={hasInstagramSelected} />
             </CardContent>
           </Card>
 

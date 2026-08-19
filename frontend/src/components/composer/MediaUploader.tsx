@@ -15,10 +15,12 @@ export function MediaUploader({
   items,
   onChange,
   disabled,
+  hasInstagramSelected = false,
 }: {
   items: MediaItem[];
   onChange: (items: MediaItem[]) => void;
   disabled?: boolean;
+  hasInstagramSelected?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
   const [dragOverZone, setDragOverZone] = useState(false);
@@ -174,6 +176,12 @@ export function MediaUploader({
             </div>
           ))}
         </div>
+      )}
+
+      {hasInstagramSelected && items.some((i) => i.type === "image") && (
+        <p className="text-xs text-muted-foreground">
+          Instagram: images outside 4:5–1.91:1 will be automatically center-cropped.
+        </p>
       )}
 
       {!disabled && canAddMore && (
